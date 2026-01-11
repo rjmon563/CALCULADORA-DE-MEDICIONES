@@ -1,4 +1,4 @@
-const CACHE_NAME = 'medicion-v14';
+const CACHE_NAME = 'medicion-v15';
 const ASSETS = [
   './',
   './index.html',
