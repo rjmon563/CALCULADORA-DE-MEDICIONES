@@ -1,4 +1,4 @@
-const CACHE_NAME = 'calculo-medicion-v10';
+const CACHE_NAME = 'medicion-v13';
 const ASSETS = [
   './',
   './index.html',
@@ -6,36 +6,34 @@ const ASSETS = [
   'https://cdn.tailwindcss.com',
   'https://unpkg.com/react@18/umd/react.production.min.js',
   'https://unpkg.com/react-dom@18/umd/react-dom.production.min.js',
-  'https://unpkg.com/@babel/standalone/babel.min.js'
+  'https://unpkg.com/@babel/standalone/babel.min.js',
+  'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js',
+  'https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js'
 ];
 
-// Instalación: Guardar archivos en caché
-self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(ASSETS);
-    })
+// Instalación
+self.addEventListener('install', (e) => {
+  e.waitUntil(
+    caches.open(CACHE_NAME).then((c) => c.addAll(ASSETS))
   );
   self.skipWaiting();
 });
 
-// Activación: Limpieza total de versiones anteriores para borrar el error "en blanco"
-self.addEventListener('activate', (event) => {
-  event.waitUntil(
-    caches.keys().then((keys) => {
+// Activación: Aquí es donde se borra lo viejo que causaba la pantalla en blanco
+self.addEventListener('activate', (e) => {
+  e.waitUntil(
+    caches.keys().then((ks) => {
       return Promise.all(
-        keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key))
+        ks.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k))
       );
     })
   );
   self.clients.claim();
 });
 
-// Estrategia: Red primero para asegurar cambios, caché como respaldo
-self.addEventListener('fetch', (event) => {
-  event.respondWith(
-    fetch(event.request).catch(() => {
-      return caches.match(event.request);
-    })
+// Estrategia de red
+self.addEventListener('fetch', (e) => {
+  e.respondWith(
+    fetch(e.request).catch(() => caches.match(e.request))
   );
 });
