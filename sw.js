@@ -1,4 +1,4 @@
-const CACHE_NAME = 'calculo-medicion-v7'; // Versión v7 para corregir iconos
+const CACHE_NAME = 'calculo-medicion-v8';
 const ASSETS = [
   './',
   './index.html',
@@ -12,17 +12,13 @@ const ASSETS = [
   'https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js'
 ];
 
-// Instalación: Guardar archivos esenciales en caché
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(ASSETS);
-    })
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS))
   );
   self.skipWaiting();
 });
 
-// Activación: Borrar todas las cachés antiguas (v1 a v6)
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) => {
@@ -31,13 +27,11 @@ self.addEventListener('activate', (event) => {
       );
     })
   );
+  self.clients.claim(); // Toma el control de la página inmediatamente
 });
 
-// Estrategia: Intentar red siempre para cambios frescos, si no hay red, usar la caché
 self.addEventListener('fetch', (event) => {
   event.respondWith(
-    fetch(event.request).catch(() => {
-      return caches.match(event.request);
-    })
+    fetch(event.request).catch(() => caches.match(event.request))
   );
 });
