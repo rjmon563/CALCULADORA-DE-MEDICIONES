@@ -1,1 +1,167 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="manifest" href="manifest.json">
+    <title>Cálculo Medición</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
+    <style>
+        body { -webkit-tap-highlight-color: transparent; font-family: system-ui, sans-serif; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        input, select { font-size: 16px !important; }
+        .active-tab { color: #2563eb; border-bottom: 4px solid #2563eb; background: #eff6ff; }
+    </style>
+</head>
+<body class="bg-slate-100">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        // ICONOS SVG MANUALES (No dependen de librerías externas para evitar el error en blanco)
+        const IconCalc = () => (
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-blue-400"><rect width="16" height="20" x="4" y="2" rx="2"/><line x1="8" x2="16" y1="6" y2="6"/><line x1="16" x2="16" y1="14" y2="18"/><path d="M16 10h.01"/><path d="M12 10h.01"/><path d="M8 10h.01"/><path d="M12 14h.01"/><path d="M8 14h.01"/><path d="M12 18h.01"/><path d="M8 18h.01"/></svg>
+        );
+
+        const IconCam = () => (
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
+        );
+
+        function App() {
+            const [tab, setTab] = useState('mediciones');
+            const [mediciones, setMediciones] = useState(() => JSON.parse(localStorage.getItem('med_v10') || '[]'));
+            const [horas, setHoras] = useState(() => JSON.parse(localStorage.getItem('hrs_v10') || '[]'));
+            
+            const [medForm, setMedForm] = useState({ tipo: 'Tabique', desc: '', valor: '', mult: '' });
+            const [horaForm, setHoraForm] = useState({ desc: '', inicio: '', fin: '', fecha: new Date().toISOString().split('T')[0] });
+
+            useEffect(() => { localStorage.setItem('med_v10', JSON.stringify(mediciones)); }, [mediciones]);
+            useEffect(() => { localStorage.setItem('hrs_v10', JSON.stringify(horas)); }, [horas]);
+
+            const agregarMedicion = () => {
+                if (!medForm.valor) return;
+                const suma = medForm.valor.split('+').reduce((a, b) => a + (parseFloat(b) || 0), 0);
+                const m = parseFloat(medForm.mult) || 0;
+                setMediciones([{
+                    id: Date.now(), ...medForm,
+                    totalL: suma.toFixed(2),
+                    totalS: (suma * m).toFixed(2),
+                    fecha: new Date().toLocaleDateString()
+                }, ...mediciones]);
+                setMedForm({ ...medForm, desc: '', valor: '', mult: '' });
+            };
+
+            const agregarHora = () => {
+                if (!horaForm.inicio || !horaForm.fin) return;
+                const h1 = new Date(`2000-01-01T${horaForm.inicio}`);
+                const h2 = new Date(`2000-01-01T${horaForm.fin}`);
+                const diff = (h2 - h1) / 3600000;
+                if (diff <= 0) return alert("Hora fin debe ser mayor");
+                setHoras([{ id: Date.now(), ...horaForm, total: diff.toFixed(2) }, ...horas]);
+                setHoraForm({ ...horaForm, desc: '' });
+            };
+
+            const agruparPorMes = () => {
+                const grupos = {};
+                horas.forEach(h => {
+                    const mes = new Date(h.fecha).toLocaleString('es-ES', { month: 'long', year: 'numeric' });
+                    if (!grupos[mes]) grupos[mes] = { items: [], total: 0 };
+                    grupos[mes].items.push(h);
+                    grupos[mes].total += parseFloat(h.total);
+                });
+                return grupos;
+            };
+
+            const grupos = agruparPorMes();
+
+            return (
+                <div className="max-w-md mx-auto min-h-screen bg-white shadow-xl flex flex-col">
+                    <header className="bg-slate-900 text-white p-5 sticky top-0 z-50 flex justify-between items-center">
+                        <div className="flex items-center gap-2">
+                            <IconCalc />
+                            <h1 className="font-black uppercase tracking-tighter text-md">Cálculo Medición</h1>
+                        </div>
+                        <button onClick={() => confirm("¿Borrar todo?") && (setMediciones([]) || setHoras([]))} 
+                                className="bg-red-600 text-[10px] font-bold px-3 py-2 rounded-lg">RESET</button>
+                    </header>
+
+                    <nav className="flex border-b sticky top-[68px] bg-white z-40">
+                        <button onClick={() => setTab('mediciones')} className={`flex-1 py-4 text-xs font-black uppercase ${tab === 'mediciones' ? 'active-tab' : 'text-slate-400'}`}>Mediciones</button>
+                        <button onClick={() => setTab('horas')} className={`flex-1 py-4 text-xs font-black uppercase ${tab === 'horas' ? 'active-tab' : 'text-slate-400'}`}>Horas</button>
+                    </nav>
+
+                    <main className="p-4 flex-1">
+                        {tab === 'mediciones' ? (
+                            <div className="space-y-4">
+                                <div className="bg-slate-50 p-4 rounded-2xl border space-y-3">
+                                    <select className="w-full p-3 border rounded-xl font-bold bg-white" value={medForm.tipo} onChange={e => setMedForm({...medForm, tipo: e.target.value})}>
+                                        <option>Tabique</option><option>Techo</option><option>Cajón ML</option><option>Tabica</option><option>Cantonera</option>
+                                    </select>
+                                    <input placeholder="Descripción" className="w-full p-3 border rounded-xl bg-white" value={medForm.desc} onChange={e => setMedForm({...medForm, desc: e.target.value})} />
+                                    <div className="flex gap-2">
+                                        <input placeholder="Largo (3+2...)" className="flex-1 p-3 border rounded-xl bg-white font-mono" value={medForm.valor} onChange={e => setMedForm({...medForm, valor: e.target.value})} />
+                                        <input type="number" placeholder="Ancho" className="w-24 p-3 border rounded-xl bg-white font-mono" value={medForm.mult} onChange={e => setMedForm({...medForm, mult: e.target.value})} />
+                                    </div>
+                                    <button onClick={agregarMedicion} className="w-full bg-blue-600 text-white font-black py-4 rounded-xl uppercase shadow-lg">Guardar Medida</button>
+                                </div>
+                                {mediciones.map(m => (
+                                    <div key={m.id} className="bg-white p-4 rounded-xl border flex justify-between items-center shadow-sm">
+                                        <div>
+                                            <span className="text-[10px] font-black text-blue-500 uppercase">{m.tipo}</span>
+                                            <div className="font-bold text-slate-700">{m.desc || 'Obra'}</div>
+                                        </div>
+                                        <div className="text-right">
+                                            <div className="font-black text-lg">{m.totalL} ml</div>
+                                            {parseFloat(m.totalS) > 0 && <div className="text-xs font-bold text-emerald-600">{m.totalS} m²</div>}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="space-y-4">
+                                <div className="bg-slate-50 p-4 rounded-2xl border space-y-3">
+                                    <input type="date" className="w-full p-3 border rounded-xl font-bold bg-white" value={horaForm.fecha} onChange={e => setHoraForm({...horaForm, fecha: e.target.value})} />
+                                    <input placeholder="Descripción" className="w-full p-3 border rounded-xl bg-white" value={horaForm.desc} onChange={e => setHoraForm({...horaForm, desc: e.target.value})} />
+                                    <div className="flex gap-2">
+                                        <input type="time" className="flex-1 p-3 border rounded-xl bg-white" value={horaForm.inicio} onChange={e => setHoraForm({...horaForm, inicio: e.target.value})} />
+                                        <input type="time" className="flex-1 p-3 border rounded-xl bg-white" value={horaForm.fin} onChange={e => setHoraForm({...horaForm, fin: e.target.value})} />
+                                    </div>
+                                    <button onClick={agregarHora} className="w-full bg-emerald-600 text-white font-black py-4 rounded-xl uppercase shadow-lg">Registrar Horas</button>
+                                </div>
+                                {Object.entries(grupos).map(([mes, data]) => (
+                                    <div key={mes} className="space-y-2">
+                                        <div className="flex justify-between items-center bg-slate-200 px-3 py-1 rounded text-[10px] font-black uppercase">
+                                            <span>{mes}</span>
+                                            <span>{data.total.toFixed(2)} Horas</span>
+                                        </div>
+                                        {data.items.map(h => (
+                                            <div key={h.id} className="bg-white p-4 rounded-xl border flex justify-between shadow-sm">
+                                                <div>
+                                                    <div className="font-bold text-sm">{h.desc || 'Trabajo'}</div>
+                                                    <div className="text-[10px] text-slate-400 font-bold uppercase">{h.fecha}</div>
+                                                </div>
+                                                <div className="font-black text-blue-600">{h.total}h</div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </main>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
