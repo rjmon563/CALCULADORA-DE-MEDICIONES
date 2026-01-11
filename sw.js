@@ -1,4 +1,4 @@
-const CACHE_NAME = 'buen-camino-v2'; // He subido la versión a v2
+const CACHE_NAME = 'buen-camino-v3'; // Actualizado a v3
 const ASSETS = [
   './',
   './index.html',
@@ -21,7 +21,7 @@ self.addEventListener('install', (event) => {
   self.skipWaiting();
 });
 
-// Limpieza de cachés antiguas
+// Limpieza de cachés antiguas (v1, v2, etc.)
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) => {
@@ -32,7 +32,7 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// Estrategia de red: primero intenta red, si falla, usa caché
+// Estrategia: Intentar red primero, si no hay internet, usar caché
 self.addEventListener('fetch', (event) => {
   event.respondWith(
     fetch(event.request).catch(() => {
