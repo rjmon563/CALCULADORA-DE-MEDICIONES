@@ -1,4 +1,4 @@
-const CACHE_NAME = 'calculo-medicion-v8';
+const CACHE_NAME = 'calculo-medicion-v9';
 const ASSETS = [
   './',
   './index.html',
@@ -7,18 +7,20 @@ const ASSETS = [
   'https://unpkg.com/react@18/umd/react.production.min.js',
   'https://unpkg.com/react-dom@18/umd/react-dom.production.min.js',
   'https://unpkg.com/@babel/standalone/babel.min.js',
-  'https://unpkg.com/lucide@latest',
-  'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js',
-  'https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js'
+  'https://unpkg.com/lucide@latest'
 ];
 
+// Instalación
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS))
+    caches.open(CACHE_NAME).then((cache) => {
+      return cache.addAll(ASSETS);
+    })
   );
   self.skipWaiting();
 });
 
+// Activación y limpieza profunda de versiones anteriores (v1 a v8)
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) => {
@@ -27,11 +29,15 @@ self.addEventListener('activate', (event) => {
       );
     })
   );
-  self.clients.claim(); // Toma el control de la página inmediatamente
+  // Fuerza a las pestañas abiertas a usar el nuevo SW inmediatamente
+  self.clients.claim();
 });
 
+// Estrategia de red primero (Network First) para evitar el error de pantalla en blanco
 self.addEventListener('fetch', (event) => {
   event.respondWith(
-    fetch(event.request).catch(() => caches.match(event.request))
+    fetch(event.request).catch(() => {
+      return caches.match(event.request);
+    })
   );
 });
