@@ -32,14 +32,14 @@
 
         function App() {
             const [tab, setTab] = useState('mediciones');
-            const [mediciones, setMediciones] = useState(() => JSON.parse(localStorage.getItem('med_v14') || '[]'));
-            const [horas, setHoras] = useState(() => JSON.parse(localStorage.getItem('hrs_v14') || '[]'));
+            const [mediciones, setMediciones] = useState(() => JSON.parse(localStorage.getItem('med_v15') || '[]'));
+            const [horas, setHoras] = useState(() => JSON.parse(localStorage.getItem('hrs_v15') || '[]'));
             
             const [medForm, setMedForm] = useState({ tipo: 'Tabique', desc: '', valor: '', mult: '' });
-            const [horaForm, setHoraForm] = useState({ desc: '', inicio: '', fin: '', fecha: new Date().toISOString().split('T')[0] });
+            const [horaForm, setHoraForm] = useState({ desc: '', inicio: '', fin: '', fecha: new Date().toISOString().split('T')[0], foto: null });
 
-            useEffect(() => { localStorage.setItem('med_v14', JSON.stringify(mediciones)); }, [mediciones]);
-            useEffect(() => { localStorage.setItem('hrs_v14', JSON.stringify(horas)); }, [horas]);
+            useEffect(() => { localStorage.setItem('med_v15', JSON.stringify(mediciones)); }, [mediciones]);
+            useEffect(() => { localStorage.setItem('hrs_v15', JSON.stringify(horas)); }, [horas]);
 
             const clickTecla = (t) => {
                 if (t === 'C') setMedForm({...medForm, valor: ''});
@@ -49,18 +49,24 @@
 
             const guardarMedida = () => {
                 if (!medForm.valor) return;
-                // Sumar todos los valores del campo largo
                 const sumaML = medForm.valor.split('+').reduce((a, b) => a + (parseFloat(b) || 0), 0);
                 const multiplicador = parseFloat(medForm.mult) || 0;
-                
                 setMediciones([{
-                    id: Date.now(),
-                    ...medForm,
+                    id: Date.now(), ...medForm,
                     totalL: sumaML.toFixed(2),
                     totalS: (sumaML * multiplicador).toFixed(2),
                     fecha: new Date().toLocaleDateString()
                 }, ...mediciones]);
                 setMedForm({ ...medForm, desc: '', valor: '', mult: '' });
+            };
+
+            const manejarFoto = (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onloadend = () => setHoraForm({...horaForm, foto: reader.result});
+                    reader.readAsDataURL(file);
+                }
             };
 
             const guardarHora = () => {
@@ -70,10 +76,18 @@
                 const diff = (h2 - h1) / 3600000;
                 if (diff <= 0) return alert("Hora fin debe ser mayor");
                 setHoras([{ id: Date.now(), ...horaForm, total: diff.toFixed(2) }, ...horas]);
-                setHoraForm({ ...horaForm, desc: '' });
+                setHoraForm({ ...horaForm, desc: '', foto: null });
             };
 
-            // Totales acumulados
+            const exportarPDF = () => {
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF();
+                doc.text("INFORME DE MEDICIONES - BUEN CAMINO", 14, 15);
+                const data = mediciones.map(m => [m.fecha, m.tipo, m.desc, m.totalL + " ml", m.totalS + " m2"]);
+                doc.autoTable({ head: [['Fecha', 'Tipo', 'Descripción', 'Largo', 'Sup']], body: data, startY: 25 });
+                doc.save(`Mediciones_${new Date().toLocaleDateString()}.pdf`);
+            };
+
             const totalTipo = (tipo) => {
                 const filtrados = mediciones.filter(m => m.tipo === tipo);
                 const ml = filtrados.reduce((a, b) => a + parseFloat(b.totalL), 0).toFixed(2);
@@ -87,7 +101,10 @@
                 <div className="max-w-md mx-auto min-h-screen bg-white flex flex-col">
                     <header className="bg-slate-900 text-white p-4 sticky top-0 z-50 flex justify-between items-center">
                         <h1 className="font-black uppercase text-blue-400">Cálculo Medición</h1>
-                        <button onClick={() => confirm("¿Borrar todo?") && (setMediciones([]) || setHoras([]))} className="bg-red-600 text-[10px] px-2 py-1 rounded">RESET</button>
+                        <div className="flex gap-2">
+                            <button onClick={exportarPDF} className="bg-blue-600 text-[10px] px-2 py-1 rounded font-bold">PDF</button>
+                            <button onClick={() => confirm("¿Borrar todo?") && (setMediciones([]) || setHoras([]))} className="bg-red-600 text-[10px] px-2 py-1 rounded">RESET</button>
+                        </div>
                     </header>
 
                     <nav className="flex border-b sticky top-[56px] bg-white z-40 text-center">
@@ -102,26 +119,16 @@
                                     <select className="w-full p-3 border rounded-xl font-bold" value={medForm.tipo} onChange={e => setMedForm({...medForm, tipo: e.target.value})}>
                                         <option>Tabique</option><option>Techo</option><option>Cajón ML</option><option>Tabica</option><option>Cantonera</option>
                                     </select>
-                                    
                                     <input placeholder="Descripción del tajo" className="w-full p-3 border rounded-xl" value={medForm.desc} onChange={e => setMedForm({...medForm, desc: e.target.value})} />
-                                    
-                                    <div className="text-[10px] font-bold text-slate-400 uppercase ml-1">Suma de Largos (ML):</div>
                                     <div className="pantalla-suma">{medForm.valor || "0"}</div>
-
-                                    <div className="text-[10px] font-bold text-slate-400 uppercase ml-1">Altura / Ancho:</div>
-                                    <input type="number" placeholder="Ej: 2.50" className="w-full p-3 border rounded-xl font-mono text-center text-lg font-bold" value={medForm.mult} onChange={e => setMedForm({...medForm, mult: e.target.value})} />
-
+                                    <input type="number" placeholder="Altura / Ancho" className="w-full p-3 border rounded-xl font-mono text-center text-lg font-bold" value={medForm.mult} onChange={e => setMedForm({...medForm, mult: e.target.value})} />
                                     <div className="grid grid-cols-4 gap-2 bg-slate-200 p-2 rounded-xl">
                                         {['7','8','9','+','4','5','6','←','1','2','3','C','0','.'].map(tecla => (
-                                            <button key={tecla} onClick={() => clickTecla(tecla)} className={`btn-calc ${['+','←','C'].includes(tecla) ? 'bg-orange-100 text-orange-600' : ''}`}>
-                                                {tecla}
-                                            </button>
+                                            <button key={tecla} onClick={() => clickTecla(tecla)} className={`btn-calc ${['+','←','C'].includes(tecla) ? 'bg-orange-100 text-orange-600' : ''}`}>{tecla}</button>
                                         ))}
                                         <button onClick={guardarMedida} className="col-span-2 bg-blue-600 text-white font-black rounded-xl uppercase">Guardar</button>
                                     </div>
                                 </div>
-
-                                {/* Resumen de totales */}
                                 <div className="grid grid-cols-2 gap-2">
                                     {['Tabique', 'Techo', 'Cajón ML', 'Tabica', 'Cantonera'].map(t => (
                                         <div key={t} className="bg-slate-800 text-white p-2 rounded-lg text-center">
@@ -130,18 +137,11 @@
                                         </div>
                                     ))}
                                 </div>
-
                                 <div className="space-y-2 border-t pt-4">
                                     {mediciones.map(m => (
-                                        <div key={m.id} className="bg-white p-3 rounded-lg border flex justify-between items-center shadow-sm">
-                                            <div>
-                                                <div className="text-[9px] font-black text-blue-500 uppercase">{m.tipo} ({m.mult})</div>
-                                                <div className="font-bold text-slate-700 text-sm">{m.desc || 'Sin desc.'}</div>
-                                            </div>
-                                            <div className="text-right">
-                                                <div className="font-black text-blue-900">{m.totalL} ml</div>
-                                                <div className="text-[10px] font-bold text-emerald-600">{m.totalS} m²</div>
-                                            </div>
+                                        <div key={m.id} className="bg-white p-3 rounded-lg border flex justify-between items-center shadow-sm text-sm">
+                                            <div><div className="text-[9px] font-black text-blue-500 uppercase">{m.tipo} ({m.mult})</div><div className="font-bold text-slate-700">{m.desc || 'Sin desc.'}</div></div>
+                                            <div className="text-right"><div className="font-black text-blue-900">{m.totalL} ml</div><div className="text-[10px] font-bold text-emerald-600">{m.totalS} m²</div></div>
                                         </div>
                                     ))}
                                 </div>
@@ -150,16 +150,28 @@
                             <div className="space-y-4">
                                 <div className="bg-slate-50 p-4 rounded-2xl border space-y-3">
                                     <input type="date" className="w-full p-3 border rounded-xl font-bold" value={horaForm.fecha} onChange={e => setHoraForm({...horaForm, fecha: e.target.value})} />
-                                    <input placeholder="Descripción trabajo" className="w-full p-3 border rounded-xl bg-white" value={horaForm.desc} onChange={e => setHoraForm({...horaForm, desc: e.target.value})} />
-                                    <div className="flex gap-2 text-center">
-                                        <div className="flex-1"><span className="text-[10px] font-bold">INICIO</span><input type="time" className="w-full p-3 border rounded-xl" value={horaForm.inicio} onChange={e => setHoraForm({...horaForm, inicio: e.target.value})} /></div>
-                                        <div className="flex-1"><span className="text-[10px] font-bold">FIN</span><input type="time" className="w-full p-3 border rounded-xl" value={horaForm.fin} onChange={e => setHoraForm({...horaForm, fin: e.target.value})} /></div>
+                                    <input placeholder="Descripción administración" className="w-full p-3 border rounded-xl bg-white" value={horaForm.desc} onChange={e => setHoraForm({...horaForm, desc: e.target.value})} />
+                                    <div className="flex gap-2">
+                                        <input type="time" className="flex-1 p-3 border rounded-xl" value={horaForm.inicio} onChange={e => setHoraForm({...horaForm, inicio: e.target.value})} />
+                                        <input type="time" className="flex-1 p-3 border rounded-xl" value={horaForm.fin} onChange={e => setHoraForm({...horaForm, fin: e.target.value})} />
                                     </div>
-                                    <button onClick={guardarHora} className="w-full bg-emerald-600 text-white font-black py-4 rounded-xl uppercase">Registrar {totalHoras}h Totales</button>
+                                    
+                                    <div className="flex items-center gap-2">
+                                        <label className="flex-1 bg-slate-200 p-3 rounded-xl flex items-center justify-center gap-2 font-bold text-xs cursor-pointer">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
+                                            {horaForm.foto ? "FOTO LISTA" : "AÑADIR FOTO"}
+                                            <input type="file" accept="image/*" capture="environment" className="hidden" onChange={manejarFoto} />
+                                        </label>
+                                        <button onClick={guardarHora} className="flex-[2] bg-emerald-600 text-white font-black py-3 rounded-xl uppercase">Guardar Horas</button>
+                                    </div>
                                 </div>
+                                <div className="bg-slate-800 text-white p-3 rounded-xl text-center font-black">TOTAL ACUMULADO: {totalHoras}h</div>
                                 {horas.map(h => (
-                                    <div key={h.id} className="bg-white p-3 rounded-lg border flex justify-between shadow-sm">
-                                        <div><div className="font-bold text-sm">{h.desc}</div><div className="text-[10px] text-slate-400 font-bold uppercase">{h.fecha}</div></div>
+                                    <div key={h.id} className="bg-white p-3 rounded-lg border flex justify-between items-center shadow-sm">
+                                        <div className="flex items-center gap-3">
+                                            {h.foto && <img src={h.foto} className="w-10 h-10 rounded object-cover border" />}
+                                            <div><div className="font-bold text-sm">{h.desc}</div><div className="text-[10px] text-slate-400 font-bold uppercase">{h.fecha}</div></div>
+                                        </div>
                                         <div className="font-black text-blue-600">{h.total}h</div>
                                     </div>
                                 ))}
