@@ -1,4 +1,4 @@
-const CACHE_NAME = 'calculo-medicion-v4'; // Actualizado a v4
+const CACHE_NAME = 'calculo-medicion-v5'; // Actualizado a v5
 const ASSETS = [
   './',
   './index.html',
@@ -21,7 +21,7 @@ self.addEventListener('install', (event) => {
   self.skipWaiting();
 });
 
-// Limpieza de cachés antiguas (v1, v2, v3)
+// Limpieza de versiones antiguas (v1 a v4)
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) => {
@@ -32,7 +32,7 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// Estrategia: Red primero (para cambios rápidos), luego caché (para modo offline)
+// Estrategia: Red primero para asegurar cambios, caché como respaldo
 self.addEventListener('fetch', (event) => {
   event.respondWith(
     fetch(event.request).catch(() => {
