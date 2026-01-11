@@ -1,8 +1,10 @@
 {
   "name": "Cálculo Medición",
   "short_name": "Mediciones",
+  "description": "App para mediciones de obra y control de horas",
   "start_url": "./index.html",
   "display": "standalone",
+  "orientation": "portrait",
   "background_color": "#0f172a",
   "theme_color": "#0f172a",
   "icons": [
