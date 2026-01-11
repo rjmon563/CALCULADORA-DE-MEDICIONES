@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="es">
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
+    <link rel="manifest" href="manifest.json"/>
+    <meta name="theme-color" content="#2563eb"/>
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+
+    <title>Calculadora de Obra</title>
+    <style>
+        body { -webkit-tap-highlight-color: transparent; }
+        .active-tab { border-bottom: 4px solid #2563eb; color: #2563eb; }
+        input, select { font-size: 16px !important; }
+    </style>
+</head>
+<body class="bg-slate-100 font-sans">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        function CalculadoraObra() {
+            const [registros, setRegistros] = useState(() => {
+                const salvo = localStorage.getItem('obra_data');
+                return salvo ? JSON.parse(salvo) : [];
+            });
+            const [lugar, setLugar] = useState('');
+            const [tipo, setTipo] = useState('Tabique');
+            const [medidas, setMedidas] = useState('');
+            const [altura, setAltura] = useState('');
+
+            useEffect(() => {
+                localStorage.setItem('obra_data', JSON.stringify(registros));
+            }, [registros]);
+
+            const guardarMedicion = () => {
+                if (!lugar || !medidas) return alert("Rellena lugar y medidas");
+                
+                const sumaLongitud = medidas.split('+').reduce((a, b) => a + (parseFloat(b.trim()) || 0), 0);
+                const alt = parseFloat(altura) || 1;
+                const total = (sumaLongitud * alt).toFixed(2);
+                const unidad = parseFloat(altura) > 0 ? 'm²' : 'ml';
+
+                const nuevo = {
+                    id: Date.now(),
+                    fecha: new Date().toLocaleDateString(),
+                    lugar,
+                    tipo,
+                    detalle: `${medidas} ${altura ? ' (alt: ' + altura + ')' : ''}`,
+                    resultado: `${total} ${unidad}`
+                };
+
+                setRegistros([nuevo, ...registros]);
+                setMedidas('');
+            };
+
+            const borrarTodo = () => {
+                if(confirm("¿Borrar todos los datos registrados?")) setRegistros([]);
+            };
+
+            const descargarPDF = () => {
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF();
+                doc.text("REPORTE DE OBRA", 14, 20);
+                const body = registros.map(r => [r.fecha, r.lugar, r.tipo, r.detalle, r.resultado]);
+                doc.autoTable({ head: [['Fecha', 'Obra', 'Tipo', 'Medidas', 'Total']], body });
+                doc.save('mediciones_obra.pdf');
+            };
+
+            return (
+                <div className="max-w-md mx-auto min-h-screen flex flex-col bg-slate-100">
+                    <header className="bg-blue-600 text-white p-6 shadow-md flex justify-between items-center">
+                        <h1 className="text-xl font-bold uppercase tracking-tight">Calculadora Obra</h1>
+                        <button onClick={borrarTodo} className="text-[10px] bg-blue-800 px-2 py-1 rounded">BORRAR</button>
+                    </header>
+
+                    <main className="p-4 flex-1 space-y-4">
+                        <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-200 space-y-4">
+                            <input 
+                                placeholder="Nombre Obra / Habitación" 
+                                className="w-full border-b p-2 outline-none focus:border-blue-500 font-semibold"
+                                value={lugar} onChange={e => setLugar(e.target.value)}
+                            />
+                            
+                            <div className="flex gap-2">
+                                <select 
+                                    className="flex-1 bg-slate-50 p-4 rounded-xl font-medium"
+                                    value={tipo} onChange={e => setTipo(e.target.value)}
+                                >
+                                    <option>Tabique</option>
+                                    <option>Trasdosado</option>
+                                    <option>Techo</option>
+                                    <option>Cajón</option>
+                                </select>
+                                <input 
+                                    placeholder="Alt" type="number" 
+                                    className="w-20 bg-slate-50 p-4 rounded-xl text-center font-bold"
+                                    value={altura} onChange={e => setAltura(e.target.value)}
+                                />
+                            </div>
+
+                            <input 
+                                placeholder="Medidas (ej: 3.5+2+4)" 
+                                className="w-full bg-slate-900 text-green-400 p-5 rounded-2xl font-mono text-2xl shadow-inner"
+                                value={medidas} onChange={e => setMedidas(e.target.value)}
+                            />
+
+                            <button 
+                                onClick={guardarMedicion}
+                                className="w-full bg-blue-600 text-white font-bold py-5 rounded-2xl shadow-lg active:scale-95 transition-transform"
+                            >
+                                GUARDAR MEDICIÓN
+                            </button>
+                        </div>
+
+                        <div className="space-y-2">
+                            {registros.map(r => (
+                                <div key={r.id} className="bg-white p-4 rounded-xl border-l-4 border-blue-500 shadow-sm flex justify-between items-center">
+                                    <div className="text-sm">
+                                        <p className="font-bold text-slate-700">{r.lugar} <span className="text-slate-400 font-normal">({r.tipo})</span></p>
+                                        <p className="text-xs text-slate-400">{r.detalle}</p>
+                                    </div>
+                                    <div className="text-lg font-black text-blue-600">{r.resultado}</div>
+                                </div>
+                            ))}
+                        </div>
+                    </main>
+
+                    <button 
+                        onClick={descargarPDF}
+                        className="fixed bottom-6 right-6 bg-slate-900 text-white w-14 h-14 rounded-full shadow-2xl flex items-center justify-center text-xl"
+                    >
+                        PDF
+                    </button>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<CalculadoraObra />);
+
+        // Registro del Service Worker
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js').catch(err => console.log('SW error', err));
+            });
+        }
+    </script>
+</body>
+</html>
