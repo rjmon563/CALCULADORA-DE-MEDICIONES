@@ -108,7 +108,7 @@
             };
 
             const resetDatos = () => {
-                if(confirm("¿Borrar todos los datos de la obra actual?")) {
+                if(confirm("¿Quieres borrar todos los datos de esta obra para empezar una nueva?")) {
                     setMediciones([]);
                     setHoras([]);
                 }
@@ -179,12 +179,17 @@
 
             return (
                 <div className="max-w-4xl mx-auto pb-24">
+                    {/* Header con cambios solicitados */}
                     <div className="bg-slate-900 text-white p-6 sticky top-0 z-30 shadow-lg">
                         <div className="flex justify-between items-center">
-                            <h1 className="text-xl font-bold tracking-tight">BUEN CAMINO</h1>
+                            <h1 className="text-xl font-bold tracking-widest">CALCULO MEDICIÓN</h1>
                             <div className="flex gap-2">
-                                <button onClick={generarPDF} className="bg-blue-600 p-2 rounded-lg shadow-md active:scale-90 transition-transform"><Icon name="FileText" /></button>
-                                <button onClick={resetDatos} className="bg-red-600 p-2 rounded-lg shadow-md active:scale-90 transition-transform"><Icon name="RefreshCw" /></button>
+                                <button onClick={generarPDF} className="bg-blue-600 px-4 py-2 rounded-lg shadow-md active:scale-95 font-bold text-sm transition-all uppercase">
+                                    PDF
+                                </button>
+                                <button onClick={resetDatos} className="bg-red-600 px-4 py-2 rounded-lg shadow-md active:scale-95 font-bold text-sm transition-all uppercase">
+                                    RESET
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -223,7 +228,9 @@
                                 </div>
 
                                 <div className="space-y-3">
-                                    <h3 className="text-sm font-black text-slate-800 uppercase flex items-center gap-2 px-1"><Icon name="Layout" className="w-4 h-4" /> Resultados Totales</h3>
+                                    <h3 className="text-sm font-black text-slate-800 uppercase flex items-center gap-2 px-1">
+                                        <Icon name="Layout" className="w-4 h-4" /> RESULTADOS TOTALES
+                                    </h3>
                                     <div className="grid grid-cols-2 gap-2">
                                         {tiposObra.map(t => (
                                             <div key={t.value} className="bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
