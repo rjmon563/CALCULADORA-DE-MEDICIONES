@@ -119,6 +119,8 @@
                 const inicio = new Date(`2000-01-01T${horaForm.horaInicio}`);
                 const fin = new Date(`2000-01-01T${horaForm.horaFin}`);
                 const diffMs = fin - inicio;
+                if (diffMs <= 0) return alert('La hora de fin debe ser posterior a la de inicio');
+                
                 setHoras([{
                     id: Date.now(), ...horaForm,
                     totalHoras: Math.floor(diffMs / 3600000),
@@ -177,19 +179,31 @@
                 return acc;
             }, {});
 
+            // Lógica de agrupación por meses
+            const agruparHorasPorMes = () => {
+                const meses = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+                const grupos = {};
+                
+                horas.forEach(h => {
+                    const fecha = new Date(h.fecha);
+                    const clave = `${meses[fecha.getMonth()]} ${fecha.getFullYear()}`;
+                    if (!grupos[clave]) grupos[clave] = { items: [], totalMin: 0 };
+                    grupos[clave].items.push(h);
+                    grupos[clave].totalMin += (h.totalHoras * 60) + h.totalMinutos;
+                });
+                return grupos;
+            };
+
+            const gruposMes = agruparHorasPorMes();
+
             return (
                 <div className="max-w-4xl mx-auto pb-24">
-                    {/* Header con cambios solicitados */}
                     <div className="bg-slate-900 text-white p-6 sticky top-0 z-30 shadow-lg">
                         <div className="flex justify-between items-center">
                             <h1 className="text-xl font-bold tracking-widest">CALCULO MEDICIÓN</h1>
                             <div className="flex gap-2">
-                                <button onClick={generarPDF} className="bg-blue-600 px-4 py-2 rounded-lg shadow-md active:scale-95 font-bold text-sm transition-all uppercase">
-                                    PDF
-                                </button>
-                                <button onClick={resetDatos} className="bg-red-600 px-4 py-2 rounded-lg shadow-md active:scale-95 font-bold text-sm transition-all uppercase">
-                                    RESET
-                                </button>
+                                <button onClick={generarPDF} className="bg-blue-600 px-4 py-2 rounded-lg shadow-md active:scale-95 font-bold text-sm uppercase">PDF</button>
+                                <button onClick={resetDatos} className="bg-red-600 px-4 py-2 rounded-lg shadow-md active:scale-95 font-bold text-sm uppercase">RESET</button>
                             </div>
                         </div>
                     </div>
@@ -222,15 +236,11 @@
                                             <input type="number" value={medForm.multiplicador} onChange={e => setMedForm({...medForm, multiplicador: e.target.value})} className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl font-mono" />
                                         </div>
                                     </div>
-                                    <button onClick={agregarMedicion} className="w-full bg-slate-900 text-white font-bold py-4 rounded-xl shadow-lg active:scale-95 transition-all">
-                                        GUARDAR MEDIDA
-                                    </button>
+                                    <button onClick={agregarMedicion} className="w-full bg-slate-900 text-white font-bold py-4 rounded-xl shadow-lg active:scale-95 transition-all">GUARDAR MEDIDA</button>
                                 </div>
 
                                 <div className="space-y-3">
-                                    <h3 className="text-sm font-black text-slate-800 uppercase flex items-center gap-2 px-1">
-                                        <Icon name="Layout" className="w-4 h-4" /> RESULTADOS TOTALES
-                                    </h3>
+                                    <h3 className="text-sm font-black text-slate-800 uppercase px-1">RESULTADOS TOTALES</h3>
                                     <div className="grid grid-cols-2 gap-2">
                                         {tiposObra.map(t => (
                                             <div key={t.value} className="bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
@@ -243,53 +253,62 @@
                                         ))}
                                     </div>
                                 </div>
-
-                                <div className="space-y-3 pt-4">
-                                    <h3 className="text-sm font-black text-slate-400 uppercase px-1">Historial</h3>
-                                    {mediciones.map(m => (
-                                        <div key={m.id} className="bg-white p-4 rounded-xl border border-slate-200 flex justify-between items-center">
-                                            <div>
-                                                <div className="flex items-center gap-2">
-                                                    <span className="bg-slate-100 text-slate-600 text-[10px] px-2 py-0.5 rounded font-bold uppercase">{m.tipo}</span>
-                                                    <span className="font-bold text-slate-800 text-sm">{m.descripcion || 'Sin título'}</span>
-                                                </div>
-                                                <div className="text-xs text-slate-400 mt-1 font-mono">{m.detalleCalculo}</div>
-                                            </div>
-                                            <button onClick={() => setMediciones(mediciones.filter(x => x.id !== m.id))} className="text-red-200 p-2"><Icon name="Trash2" /></button>
-                                        </div>
-                                    ))}
-                                </div>
                             </>
                         ) : (
                             <div className="space-y-6">
                                 <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 space-y-4">
-                                    <input placeholder="Descripción del trabajo" value={horaForm.descripcion} onChange={e => setHoraForm({...horaForm, descripcion: e.target.value})} className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl font-bold" />
+                                    <div>
+                                        <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Seleccionar Día</label>
+                                        <input type="date" value={horaForm.fecha} onChange={e => setHoraForm({...horaForm, fecha: e.target.value})} className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl font-bold" />
+                                    </div>
+                                    <input placeholder="Descripción (ej: Montaje pladur)" value={horaForm.descripcion} onChange={e => setHoraForm({...horaForm, descripcion: e.target.value})} className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl font-bold" />
                                     <div className="grid grid-cols-2 gap-4">
-                                        <input type="time" value={horaForm.horaInicio} onChange={e => setHoraForm({...horaForm, horaInicio: e.target.value})} className="p-3 bg-slate-50 border border-slate-200 rounded-xl" />
-                                        <input type="time" value={horaForm.horaFin} onChange={e => setHoraForm({...horaForm, horaFin: e.target.value})} className="p-3 bg-slate-50 border border-slate-200 rounded-xl" />
+                                        <div>
+                                            <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Entrada</label>
+                                            <input type="time" value={horaForm.horaInicio} onChange={e => setHoraForm({...horaForm, horaInicio: e.target.value})} className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl font-mono" />
+                                        </div>
+                                        <div>
+                                            <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Salida</label>
+                                            <input type="time" value={horaForm.horaFin} onChange={e => setHoraForm({...horaForm, horaFin: e.target.value})} className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl font-mono" />
+                                        </div>
                                     </div>
                                     <div className="flex gap-2">
-                                        <button onClick={() => iniciarCamara('nueva')} className="flex-1 bg-slate-100 text-slate-600 p-3 rounded-xl font-bold border border-slate-200 flex items-center justify-center gap-2">
-                                            <Icon name="Camera" /> FOTO
+                                        <button onClick={() => iniciarCamara('nueva')} className="flex-1 bg-slate-100 text-slate-600 p-3 rounded-xl font-bold border border-slate-200 flex items-center justify-center gap-2 uppercase text-xs">
+                                            <Icon name="Camera" className="w-4 h-4" /> FOTOS
                                         </button>
-                                        <button onClick={agregarHora} className="flex-[2] bg-emerald-600 text-white p-3 rounded-xl font-bold shadow-lg shadow-emerald-100 uppercase text-xs tracking-widest">GUARDAR HORAS</button>
+                                        <button onClick={agregarHora} className="flex-[2] bg-emerald-600 text-white p-3 rounded-xl font-bold shadow-lg uppercase text-xs tracking-widest">GUARDAR HORAS</button>
                                     </div>
                                 </div>
 
-                                <div className="space-y-3">
-                                    {horas.map(h => (
-                                        <div key={h.id} className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-3">
-                                            <div className="flex justify-between items-start">
-                                                <div><h4 className="font-bold text-slate-800">{h.descripcion}</h4><p className="text-xs text-slate-400 font-mono uppercase">{h.fecha} | {h.horaInicio} - {h.horaFin}</p></div>
-                                                <span className="bg-emerald-50 text-emerald-700 px-3 py-1 rounded-full text-xs font-black">{h.totalHoras}h {h.totalMinutos}m</span>
+                                <div className="space-y-6">
+                                    {Object.keys(gruposMes).map(mesClave => (
+                                        <div key={mesClave} className="space-y-3">
+                                            <div className="flex justify-between items-center px-1">
+                                                <h3 className="text-sm font-black text-slate-800 uppercase">{mesClave}</h3>
+                                                <span className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-black">
+                                                    Total: {Math.floor(gruposMes[mesClave].totalMin / 60)}h {gruposMes[mesClave].totalMin % 60}m
+                                                </span>
                                             </div>
-                                            <div className="flex gap-2 overflow-x-auto no-scrollbar py-1">
-                                                {h.fotos?.map((f, i) => <img key={i} src={f.url} className="w-16 h-16 rounded-lg object-cover border border-slate-100 shadow-sm" />)}
-                                                <button onClick={() => iniciarCamara('existente', h.id)} className="w-16 h-16 bg-slate-50 border-2 border-dashed border-slate-200 rounded-lg flex items-center justify-center text-slate-300"><Icon name="Plus" /></button>
-                                            </div>
-                                            <div className="pt-2 border-t flex justify-end">
-                                                <button onClick={() => setHoras(horas.filter(x => x.id !== h.id))} className="text-red-400 text-[10px] font-black uppercase tracking-widest">Eliminar Registro</button>
-                                            </div>
+                                            {gruposMes[mesClave].items.map(h => (
+                                                <div key={h.id} className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+                                                    <div className="flex justify-between items-start">
+                                                        <div>
+                                                            <h4 className="font-bold text-slate-800">{h.descripcion}</h4>
+                                                            <p className="text-xs text-slate-400 font-mono font-bold uppercase">
+                                                                Día {new Date(h.fecha).getDate()} | {h.horaInicio} - {h.horaFin}
+                                                            </p>
+                                                        </div>
+                                                        <span className="bg-slate-50 text-slate-600 px-2 py-1 rounded-lg text-xs font-bold">{h.totalHoras}h {h.totalMinutos}m</span>
+                                                    </div>
+                                                    <div className="flex gap-2 overflow-x-auto no-scrollbar py-1">
+                                                        {h.fotos?.map((f, i) => <img key={i} src={f.url} className="w-16 h-16 rounded-lg object-cover border border-slate-100 shadow-sm" />)}
+                                                        <button onClick={() => iniciarCamara('existente', h.id)} className="w-16 h-16 bg-slate-50 border-2 border-dashed border-slate-200 rounded-lg flex items-center justify-center text-slate-300"><Icon name="Plus" /></button>
+                                                    </div>
+                                                    <div className="pt-2 border-t flex justify-end">
+                                                        <button onClick={() => setHoras(horas.filter(x => x.id !== h.id))} className="text-red-400 text-[10px] font-black uppercase tracking-widest">Eliminar Registro</button>
+                                                    </div>
+                                                </div>
+                                            ))}
                                         </div>
                                     ))}
                                 </div>
