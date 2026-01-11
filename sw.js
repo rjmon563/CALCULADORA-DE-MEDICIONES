@@ -1,4 +1,4 @@
-const CACHE_NAME = 'calculo-medicion-v9';
+const CACHE_NAME = 'calculo-medicion-v10';
 const ASSETS = [
   './',
   './index.html',
@@ -6,11 +6,10 @@ const ASSETS = [
   'https://cdn.tailwindcss.com',
   'https://unpkg.com/react@18/umd/react.production.min.js',
   'https://unpkg.com/react-dom@18/umd/react-dom.production.min.js',
-  'https://unpkg.com/@babel/standalone/babel.min.js',
-  'https://unpkg.com/lucide@latest'
+  'https://unpkg.com/@babel/standalone/babel.min.js'
 ];
 
-// Instalación
+// Instalación: Guardar archivos en caché
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
@@ -20,7 +19,7 @@ self.addEventListener('install', (event) => {
   self.skipWaiting();
 });
 
-// Activación y limpieza profunda de versiones anteriores (v1 a v8)
+// Activación: Limpieza total de versiones anteriores para borrar el error "en blanco"
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) => {
@@ -29,11 +28,10 @@ self.addEventListener('activate', (event) => {
       );
     })
   );
-  // Fuerza a las pestañas abiertas a usar el nuevo SW inmediatamente
   self.clients.claim();
 });
 
-// Estrategia de red primero (Network First) para evitar el error de pantalla en blanco
+// Estrategia: Red primero para asegurar cambios, caché como respaldo
 self.addEventListener('fetch', (event) => {
   event.respondWith(
     fetch(event.request).catch(() => {
