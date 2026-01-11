@@ -179,11 +179,9 @@
                 return acc;
             }, {});
 
-            // Lógica de agrupación por meses
             const agruparHorasPorMes = () => {
                 const meses = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
                 const grupos = {};
-                
                 horas.forEach(h => {
                     const fecha = new Date(h.fecha);
                     const clave = `${meses[fecha.getMonth()]} ${fecha.getFullYear()}`;
@@ -200,10 +198,13 @@
                 <div className="max-w-4xl mx-auto pb-24">
                     <div className="bg-slate-900 text-white p-6 sticky top-0 z-30 shadow-lg">
                         <div className="flex justify-between items-center">
-                            <h1 className="text-xl font-bold tracking-widest">CALCULO MEDICIÓN</h1>
+                            <div className="flex items-center gap-3">
+                                <Icon name="Calculator" className="w-6 h-6 text-blue-400" />
+                                <h1 className="text-xl font-bold tracking-widest uppercase">Cálculo Medición</h1>
+                            </div>
                             <div className="flex gap-2">
-                                <button onClick={generarPDF} className="bg-blue-600 px-4 py-2 rounded-lg shadow-md active:scale-95 font-bold text-sm uppercase">PDF</button>
-                                <button onClick={resetDatos} className="bg-red-600 px-4 py-2 rounded-lg shadow-md active:scale-95 font-bold text-sm uppercase">RESET</button>
+                                <button onClick={generarPDF} className="bg-blue-600 px-4 py-2 rounded-lg shadow-md active:scale-95 font-bold text-sm uppercase transition-all">PDF</button>
+                                <button onClick={resetDatos} className="bg-red-600 px-4 py-2 rounded-lg shadow-md active:scale-95 font-bold text-sm uppercase transition-all">RESET</button>
                             </div>
                         </div>
                     </div>
@@ -240,7 +241,9 @@
                                 </div>
 
                                 <div className="space-y-3">
-                                    <h3 className="text-sm font-black text-slate-800 uppercase px-1">RESULTADOS TOTALES</h3>
+                                    <h3 className="text-sm font-black text-slate-800 uppercase px-1 flex items-center gap-2">
+                                        <Icon name="Layout" className="w-4 h-4 text-slate-400" /> RESULTADOS TOTALES
+                                    </h3>
                                     <div className="grid grid-cols-2 gap-2">
                                         {tiposObra.map(t => (
                                             <div key={t.value} className="bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
