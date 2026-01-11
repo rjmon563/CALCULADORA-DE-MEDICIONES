@@ -1,4 +1,4 @@
-const CACHE_NAME = 'medicion-v13';
+const CACHE_NAME = 'medicion-v14';
 const ASSETS = [
   './',
   './index.html',
@@ -11,29 +11,18 @@ const ASSETS = [
   'https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js'
 ];
 
-// Instalación
 self.addEventListener('install', (e) => {
-  e.waitUntil(
-    caches.open(CACHE_NAME).then((c) => c.addAll(ASSETS))
-  );
+  e.waitUntil(caches.open(CACHE_NAME).then((c) => c.addAll(ASSETS)));
   self.skipWaiting();
 });
 
-// Activación: Aquí es donde se borra lo viejo que causaba la pantalla en blanco
 self.addEventListener('activate', (e) => {
-  e.waitUntil(
-    caches.keys().then((ks) => {
-      return Promise.all(
-        ks.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k))
-      );
-    })
-  );
+  e.waitUntil(caches.keys().then((ks) => {
+    return Promise.all(ks.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k)));
+  }));
   self.clients.claim();
 });
 
-// Estrategia de red
 self.addEventListener('fetch', (e) => {
-  e.respondWith(
-    fetch(e.request).catch(() => caches.match(e.request))
-  );
+  e.respondWith(fetch(e.request).catch(() => caches.match(e.request)));
 });
